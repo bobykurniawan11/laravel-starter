@@ -7,6 +7,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserStoreRequest;
 use App\Http\Requests\UserUpdateRequest;
+use App\Http\Requests\UserFilterRequest;
+use App\Http\Resources\UserResource;
+use App\Http\Resources\UserCollection;
 use App\Models\Tenant;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -21,21 +24,34 @@ class UserController extends Controller
         $this->service = $service;
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(UserFilterRequest $request): UserCollection
     {
-        $users = $this->service->paginate(15, $request->string('q')->toString(), $request->user());
+        $search = $request->getSearch();
+        $tenantFilter = $request->getTenantFilter();
+        $perPage = $request->getPerPage();
+        
+        $users = $this->service->paginate($perPage, $search, $request->user(), $tenantFilter);
         
         $tenants = $request->user()->can('read-all-tenants') 
             ? Tenant::select('id', 'name')->orderBy('name')->get() 
             : [];
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'users' => $users,
+        $collection = new UserCollection($users);
+        
+        return $collection->additional([
+            'filters' => [
+                'search' => $search,
+                'tenant_filter' => $tenantFilter,
+            ],
+            'options' => [
                 'tenants' => $tenants,
-                'isDeveloper' => $request->user()->can('read-all-tenants'),
                 'roles' => $this->getAvailableRoles($request->user()),
+                'is_developer' => $request->user()->can('read-all-tenants'),
+            ],
+            'permissions' => [
+                'can_create' => $request->user()->can('create-tenant-users'),
+                'can_update' => $request->user()->can('update-tenant-users'),
+                'can_delete' => $request->user()->can('delete-tenant-users'),
             ]
         ]);
     }
@@ -45,7 +61,7 @@ class UserController extends Controller
         $auth = $request->user();
         
         // Check permission
-        if (!$auth->can('create-users')) {
+        if (!$auth->can('create-tenant-users')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -53,10 +69,12 @@ class UserController extends Controller
         }
 
         $user = $this->service->create($request->validated(), $auth);
+        $user->load('roles', 'tenant');
+        
         return response()->json([
             'success' => true,
             'message' => 'User created successfully',
-            'data' => $user
+            'data' => new UserResource($user)
         ], 201);
     }
 
@@ -65,7 +83,7 @@ class UserController extends Controller
         $auth = $request->user();
         
         // Check permission
-        if (!$auth->can('read-users')) {
+        if (!$auth->can('read-tenant-users')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -73,9 +91,11 @@ class UserController extends Controller
         }
 
         $user = $this->service->find($id, $auth);
+        $user->load('roles', 'tenant');
+        
         return response()->json([
             'success' => true,
-            'data' => $user
+            'data' => new UserResource($user)
         ]);
     }
 
@@ -84,7 +104,7 @@ class UserController extends Controller
         $auth = $request->user();
         
         // Check permission
-        if (!$auth->can('update-users')) {
+        if (!$auth->can('update-tenant-users')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -92,10 +112,12 @@ class UserController extends Controller
         }
 
         $user = $this->service->update($id, $request->validated(), $auth);
+        $user->load('roles', 'tenant');
+        
         return response()->json([
             'success' => true,
             'message' => 'User updated successfully',
-            'data' => $user
+            'data' => new UserResource($user)
         ]);
     }
 
@@ -104,7 +126,7 @@ class UserController extends Controller
         $auth = $request->user();
         
         // Check permission
-        if (!$auth->can('delete-users')) {
+        if (!$auth->can('delete-tenant-users')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'

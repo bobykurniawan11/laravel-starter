@@ -17,18 +17,27 @@ class UserService
     /**
      * Paginate users for the current context.
      */
-    public function paginate(int $perPage, ?string $search, User $auth): LengthAwarePaginator
+    public function paginate(int $perPage, ?string $search, User $auth, ?int $tenantFilter = null): LengthAwarePaginator
     {
-        $query = User::query()->with('roles:name');
+        $query = User::query()->with('roles:name', 'tenant:id,name');
         $query->orderBy('name');
+        
         if (! $auth->can('read-all-tenants')) {
+            // Non-developer users can only see users from their own tenant
             $query->where('tenant_id', $auth->tenant_id);
+        } else {
+            // Developer can see all users, but can filter by specific tenant
+            if ($tenantFilter !== 0) {
+                $query->where('tenant_id', $tenantFilter);
+            }
         }
+        
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
             });
         }
+        
         return $query->paginate($perPage)->withQueryString();
     }
 
