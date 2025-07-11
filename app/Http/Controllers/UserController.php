@@ -26,15 +26,16 @@ class UserController extends Controller
     {
         $auth = $request->user();
         $search = $request->string('q')->toString();
+        $tenantFilter = $request->integer('tenant_id', null);
 
-
-        $users = $this->service->paginate(15, $search, $auth);
+        $users = $this->service->paginate(15, $search, $auth, $tenantFilter);
 
         $tenants = $auth->can('read-all-tenants') ? Tenant::select('id','name')->orderBy('name')->get() : [];
 
         return Inertia::render('users/index', [
             'users' => $users,
             'search' => $search,
+            'tenantFilter' => $tenantFilter,
             'tenants' => $tenants,
             'isDeveloper' => $auth->can('read-all-tenants'),
             'roles' => $this->getAvailableRoles($auth),

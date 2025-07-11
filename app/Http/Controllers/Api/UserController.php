@@ -23,7 +23,10 @@ class UserController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $users = $this->service->paginate(15, $request->string('q')->toString(), $request->user());
+        $search = $request->string('q')->toString();
+        $tenantFilter = $request->integer('tenant_id', null);
+        
+        $users = $this->service->paginate(15, $search, $request->user(), $tenantFilter);
         
         $tenants = $request->user()->can('read-all-tenants') 
             ? Tenant::select('id', 'name')->orderBy('name')->get() 
@@ -34,6 +37,8 @@ class UserController extends Controller
             'data' => [
                 'users' => $users,
                 'tenants' => $tenants,
+                'search' => $search,
+                'tenantFilter' => $tenantFilter,
                 'isDeveloper' => $request->user()->can('read-all-tenants'),
                 'roles' => $this->getAvailableRoles($request->user()),
             ]

@@ -16,6 +16,7 @@ interface UserItem {
     name: string;
     email: string;
     tenant_id?: number | null;
+    tenant?: { id: number; name: string } | null;
     roles?: { name: string }[];
 }
 interface PaginationLink {
@@ -30,22 +31,32 @@ interface Paginated {
 interface Props extends PageProps {
     users: Paginated;
     search: string;
+    tenantFilter?: number | null;
     isDeveloper: boolean;
     tenants: { id: number; name: string }[];
     roles: string[];
 }
 
-export default function UsersPage({ users, search: initialSearch, isDeveloper, tenants, roles }: Props) {
+export default function UsersPage({ users, search: initialSearch, tenantFilter: initialTenantFilter, isDeveloper, tenants, roles }: Props) {
     const { hasPermission } = useAuth();
     const canCreate = hasPermission('create-tenant-users');
     const canUpdate = hasPermission('update-tenant-users');
     const canDelete = hasPermission('delete-tenant-users');
     const [search, setSearch] = useState(initialSearch ?? '');
+    const [tenantFilter, setTenantFilter] = useState<number | null>(initialTenantFilter || null);
     const filtered = useMemo(() => {
         if (!search.trim()) return users.data;
         const t = search.toLowerCase();
         return users.data.filter((u) => u.name.toLowerCase().includes(t) || u.email.toLowerCase().includes(t));
     }, [users.data, search]);
+    
+    // Calculate total columns for table
+    const totalColumns = useMemo(() => {
+        let count = 4; // ID, Name, Email, Role
+        if (isDeveloper) count++; // Tenant column
+        if (canUpdate || canDelete) count++; // Actions column
+        return count;
+    }, [isDeveloper, canUpdate, canDelete]);
     const [createOpen, setCreateOpen] = useState(false);
     const { data: createForm, setData: setCreateForm, post, errors: createErrors, processing: createProcessing, reset: resetCreateForm } = useForm({
         name: '',
@@ -111,11 +122,38 @@ export default function UsersPage({ users, search: initialSearch, isDeveloper, t
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        router.get('/users', { q: e.currentTarget.value });
+                                        const params: Record<string, string | number> = { q: e.currentTarget.value };
+                                        if (tenantFilter) params.tenant_id = tenantFilter;
+                                        router.get('/users', params);
                                     }
                                 }}
                             />
                         </div>
+                        {isDeveloper && tenants.length > 0 && (
+                            <Select
+                                value={tenantFilter?.toString() || 'all'}
+                                onValueChange={(value) => {
+                                    const newTenantFilter = value === 'all' ? null : parseInt(value);
+                                    setTenantFilter(newTenantFilter);
+                                    const params: Record<string, string | number> = {};
+                                    if (search) params.q = search;
+                                    if (newTenantFilter) params.tenant_id = newTenantFilter;
+                                    router.get('/users', params);
+                                }}
+                            >
+                                <SelectTrigger className="w-48">
+                                    <SelectValue placeholder="Filter by tenant" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Tenants</SelectItem>
+                                    {tenants.map((tenant) => (
+                                        <SelectItem key={tenant.id} value={tenant.id.toString()}>
+                                            {tenant.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                         {canCreate && (
                             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                                 <DialogTrigger asChild>
@@ -205,6 +243,7 @@ export default function UsersPage({ users, search: initialSearch, isDeveloper, t
                                 <th className="px-4 py-3 font-semibold">ID</th>
                                 <th className="px-4 py-3 font-semibold">Name</th>
                                 <th className="px-4 py-3 font-semibold">Email</th>
+                                {isDeveloper && <th className="px-4 py-3 font-semibold">Tenant</th>}
                                 <th className="px-4 py-3 font-semibold">Role</th>
                                 {(canUpdate || canDelete) && <th className="px-4 py-3"></th>}
                             </tr>
@@ -215,6 +254,13 @@ export default function UsersPage({ users, search: initialSearch, isDeveloper, t
                                     <td className="px-4 py-2">{u.id}</td>
                                     <td className="px-4 py-2">{u.name}</td>
                                     <td className="px-4 py-2 font-mono">{u.email}</td>
+                                    {isDeveloper && (
+                                        <td className="px-4 py-2">
+                                            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                                {u.tenant?.name ?? 'No tenant'}
+                                            </span>
+                                        </td>
+                                    )}
                                     <td className="px-4 py-2">
                                         <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                                             {u.roles?.[0]?.name ?? 'No role'}
@@ -306,7 +352,7 @@ export default function UsersPage({ users, search: initialSearch, isDeveloper, t
                             ))}
                             {filtered.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                                    <td colSpan={totalColumns} className="px-4 py-8 text-center text-muted-foreground">
                                         No users found.
                                     </td>
                                 </tr>
