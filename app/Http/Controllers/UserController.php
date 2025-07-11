@@ -8,6 +8,7 @@ use App\Services\UserService;
 use App\Models\Tenant;
 use App\Http\Requests\UserStoreRequest;
 use App\Http\Requests\UserUpdateRequest;
+use App\Http\Requests\UserFilterRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -22,13 +23,16 @@ class UserController extends Controller
         $this->service = $service;
     }
 
-    public function index(Request $request): Response
+    public function index(UserFilterRequest $request): Response
     {
         $auth = $request->user();
-        $search = $request->string('q')->toString();
-        $tenantFilter = $request->integer('tenant_id', null);
+        $search = $request->getSearch();
+        $tenantFilter = $request->getTenantFilter();
+        $perPage = $request->getPerPage();
 
-        $users = $this->service->paginate(15, $search, $auth, $tenantFilter);
+
+
+        $users = $this->service->paginate($perPage, $search, $auth, $tenantFilter);
 
         $tenants = $auth->can('read-all-tenants') ? Tenant::select('id','name')->orderBy('name')->get() : [];
 
