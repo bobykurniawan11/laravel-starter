@@ -37,34 +37,36 @@ Route::middleware(['auth', 'can:delete-permissions'])->group(function () {
 });
 
 // below permissions routes
-Route::middleware(['auth','can:read-roles'])->group(function(){
-    Route::get('/roles',[RoleController::class,'index'])->name('roles.index');
+Route::middleware(['auth', 'can:read-roles'])->group(function () {
+    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
 });
-Route::middleware(['auth','can:create-roles'])->group(function(){
-    Route::post('/roles',[RoleController::class,'store'])->name('roles.store');
+Route::middleware(['auth', 'can:create-roles'])->group(function () {
+    Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
 });
-Route::middleware(['auth','can:update-roles'])->group(function(){
-    Route::put('/roles/{id}',[RoleController::class,'update'])->name('roles.update');
-    Route::patch('/roles/{id}',[RoleController::class,'update']);
+Route::middleware(['auth', 'can:update-roles'])->group(function () {
+    Route::put('/roles/{id}', [RoleController::class, 'update'])->name('roles.update');
+    Route::patch('/roles/{id}', [RoleController::class, 'update']);
 });
-Route::middleware(['auth','can:delete-roles'])->group(function(){
-    Route::delete('/roles/{id}',[RoleController::class,'destroy'])->name('roles.destroy');
+Route::middleware(['auth', 'can:delete-roles'])->group(function () {
+    Route::delete('/roles/{id}', [RoleController::class, 'destroy'])->name('roles.destroy');
 });
 
 // below roles routes
-Route::middleware(['auth','can:read-tenant-users'])->group(function(){
-    Route::get('/users',[UserController::class,'index'])->name('users.index');
+Route::middleware(['auth', 'can:read-tenant-users'])->group(function () {
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
 });
-Route::middleware(['auth','can:create-tenant-users'])->group(function(){
-    Route::post('/users',[UserController::class,'store'])->name('users.store');
+Route::middleware(['auth', 'can:create-tenant-users'])->group(function () {
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
 });
-Route::middleware(['auth','can:update-tenant-users'])->group(function(){
-    Route::put('/users/{id}',[UserController::class,'update'])->name('users.update');
-    Route::patch('/users/{id}',[UserController::class,'update']);
+Route::middleware(['auth', 'can:update-tenant-users'])->group(function () {
+    Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+    Route::patch('/users/{id}', [UserController::class, 'update']);
 });
-Route::middleware(['auth','can:delete-tenant-users'])->group(function(){
-    Route::delete('/users/{id}',[UserController::class,'destroy'])->name('users.destroy');
+Route::middleware(['auth', 'can:delete-tenant-users'])->group(function () {
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+Route::resource('tenants', \App\Http\Controllers\TenantController::class);
+
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

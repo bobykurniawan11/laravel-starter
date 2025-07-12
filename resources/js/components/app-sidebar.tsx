@@ -4,60 +4,69 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Shield, Users } from 'lucide-react';
+import { BookOpen, Building, Folder, LayoutGrid, Shield, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 import { useAuth } from '@/hooks/use-auth';
 
 export function AppSidebar() {
     const { hasPermission } = useAuth();
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+            icon: LayoutGrid,
+        },
         ...(hasPermission('read-permissions')
             ? [
-                  {
-                      title: 'Permissions',
-                      href: '/permissions',
-                      icon: Shield,
-                  },
-              ]
+                {
+                    title: 'Permissions',
+                    href: '/permissions',
+                    icon: Shield,
+                },
+            ]
             : []),
         ...(hasPermission('read-roles')
             ? [
-                  {
-                      title: 'Roles',
-                      href: '/roles',
-                      icon: Folder,
-                  },
-              ]
+                {
+                    title: 'Roles',
+                    href: '/roles',
+                    icon: Folder,
+                },
+            ]
             : []),
         ...(hasPermission('read-tenant-users')
             ? [
-                  {
-                      title: 'Users',
-                      href: '/users',
-                      icon: Users,
-                  },
-              ]
+                {
+                    title: 'Users',
+                    href: '/users',
+                    icon: Users,
+                },
+            ]
             : []),
-];
+        ...(hasPermission('read-tenants') || hasPermission('read-tenant-data')
+            ? [
+                {
+                    title: 'Tenants',
+                    href: '/tenants',
+                    icon: Building,
+                },
+            ]
+            : []),
+    ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
+    const footerNavItems: NavItem[] = [
+        {
+            title: 'Repository',
+            href: 'https://github.com/laravel/react-starter-kit',
+            icon: Folder,
+        },
+        {
+            title: 'Documentation',
+            href: 'https://laravel.com/docs/starter-kits#react',
+            icon: BookOpen,
+        },
+    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
