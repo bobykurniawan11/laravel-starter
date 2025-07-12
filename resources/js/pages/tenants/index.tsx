@@ -30,9 +30,9 @@ interface Props extends PageProps {
 
 export default function TenantsPage({ tenants, search: initialSearch }: Props) {
     const { hasPermission } = useAuth();
-    const canCreate = hasPermission('create-tenants') || hasPermission('create-tenant-data');
-    const canUpdate = hasPermission('update-all-tenants') || hasPermission('update-tenant-data');
-    const canDelete = hasPermission('delete-all-tenants') || hasPermission('delete-tenant-data');
+    const canCreate = hasPermission('create-tenants');
+    const canUpdate = hasPermission('update-all-tenants');
+    const canDelete = hasPermission('delete-all-tenants');
     const [search, setSearch] = useState(initialSearch ?? '');
     const filtered = useMemo(() => {
         if (!search.trim()) return tenants.data;
@@ -146,8 +146,8 @@ export default function TenantsPage({ tenants, search: initialSearch }: Props) {
                         <tbody>
                             {filtered.map((u) => (
                                 <tr key={u.id} className="border-t hover:bg-accent/20">
-                                    <td className="px-4 py-2">{u.id}</td>
-                                    <td className="px-4 py-2">{u.name}</td>
+                                    <td className="px-4 py-2 text-center">{u.id}</td>
+                                    <td className="px-4 py-2 text-center">{u.name}</td>
                                     <td className="flex justify-end gap-2 px-4 py-2 text-right">
                                         {canUpdate && (
                                             <Dialog open={editDialogs[u.id] || false} onOpenChange={(open) => setEditDialogs({ ...editDialogs, [u.id]: open })}>

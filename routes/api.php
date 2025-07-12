@@ -41,7 +41,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
 // Multi-tenant routes with role-based access control
 Route::group(['middleware' => ['auth:api']], function () {
-    
+
     // Developer routes - CRUD access to ALL tenants
     Route::group(['middleware' => 'can:read-all-tenants'], function () {
         Route::get('/tenants', function () {
@@ -51,7 +51,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 'data' => Tenant::with('users')->get()
             ]);
         });
-        
+
         Route::get('/tenants/{tenant}', function (Tenant $tenant) {
             return response()->json([
                 'success' => true,
@@ -59,7 +59,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 'data' => $tenant->load('users.roles')
             ]);
         });
-        
+
         Route::get('/tenants/{tenant}/users', function (Tenant $tenant) {
             return response()->json([
                 'success' => true,
@@ -68,13 +68,13 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-    
+
     Route::group(['middleware' => 'can:create-tenants'], function () {
         Route::post('/tenants', function (Request $request) {
             $request->validate(['name' => 'required|string|max:255']);
-            
+
             $tenant = Tenant::create($request->only('name'));
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tenant created successfully',
@@ -82,13 +82,13 @@ Route::group(['middleware' => ['auth:api']], function () {
             ], 201);
         });
     });
-    
+
     Route::group(['middleware' => 'can:update-all-tenants'], function () {
         Route::put('/tenants/{tenant}', function (Request $request, Tenant $tenant) {
             $request->validate(['name' => 'required|string|max:255']);
-            
+
             $tenant->update($request->only('name'));
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tenant updated successfully',
@@ -96,11 +96,11 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-    
+
     Route::group(['middleware' => 'can:delete-all-tenants'], function () {
         Route::delete('/tenants/{tenant}', function (Tenant $tenant) {
             $tenant->delete();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tenant deleted successfully'
@@ -112,31 +112,31 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::group(['middleware' => 'can:read-own-tenant'], function () {
         Route::get('/my-tenant', function (Request $request) {
             $user = $request->user();
-            
+
             if (!$user->tenant_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not assigned to any tenant'
                 ], 404);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Your tenant information',
                 'data' => $user->tenant()->with('users.roles')->first()
             ]);
         });
-        
+
         Route::get('/my-tenant/users', function (Request $request) {
             $user = $request->user();
-            
+
             if (!$user->tenant_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not assigned to any tenant'
                 ], 404);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Users in your tenant',
@@ -146,21 +146,21 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-    
+
     Route::group(['middleware' => 'can:update-own-tenant'], function () {
         Route::put('/my-tenant', function (Request $request) {
             $user = $request->user();
             $request->validate(['name' => 'required|string|max:255']);
-            
+
             if (!$user->tenant_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not assigned to any tenant'
                 ], 404);
             }
-            
+
             $user->tenant()->update($request->only('name'));
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Your tenant updated successfully',
@@ -168,19 +168,19 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-    
+
     // Tenant data management examples
     Route::group(['middleware' => 'can:read-tenant-data'], function () {
         Route::get('/tenant-data', function (Request $request) {
             $user = $request->user();
-            
+
             // Developer can see all tenant data, others only their own
             if ($user->can('read-all-tenants')) {
                 $data = "All tenant data (Developer access)";
             } else {
                 $data = "Tenant {$user->tenant_id} data only";
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tenant data access',
@@ -211,19 +211,19 @@ Route::group(['middleware' => ['auth:api']], function () {
     });
 
     // Developer-only roles CRUD
-    Route::group(['middleware'=>['can:read-roles']],function(){
-        Route::get('/roles',[RoleController::class,'index']);
-        Route::get('/roles/{id}',[RoleController::class,'show']);
+    Route::group(['middleware' => ['can:read-roles']], function () {
+        Route::get('/roles', [RoleController::class, 'index']);
+        Route::get('/roles/{id}', [RoleController::class, 'show']);
     });
-    Route::group(['middleware'=>['can:create-roles']],function(){
-        Route::post('/roles',[RoleController::class,'store']);
+    Route::group(['middleware' => ['can:create-roles']], function () {
+        Route::post('/roles', [RoleController::class, 'store']);
     });
-    Route::group(['middleware'=>['can:update-roles']],function(){
-        Route::put('/roles/{id}',[RoleController::class,'update']);
-        Route::patch('/roles/{id}',[RoleController::class,'update']);
+    Route::group(['middleware' => ['can:update-roles']], function () {
+        Route::put('/roles/{id}', [RoleController::class, 'update']);
+        Route::patch('/roles/{id}', [RoleController::class, 'update']);
     });
-    Route::group(['middleware'=>['can:delete-roles']],function(){
-        Route::delete('/roles/{id}',[RoleController::class,'destroy']);
+    Route::group(['middleware' => ['can:delete-roles']], function () {
+        Route::delete('/roles/{id}', [RoleController::class, 'destroy']);
     });
 
     // User CRUD routes with role-based access control
@@ -248,7 +248,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 // Example protected routes with role/permission checking
 Route::group(['middleware' => ['auth:api']], function () {
-    
+
     // Admin only routes
     Route::group(['middleware' => 'can:manage-users'], function () {
         Route::get('/admin/users', function () {
@@ -259,7 +259,7 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-    
+
     // Editor routes
     Route::group(['middleware' => 'can:create-posts'], function () {
         Route::get('/editor/posts', function () {
@@ -269,7 +269,7 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-    
+
     // Basic user routes
     Route::group(['middleware' => 'can:view-posts'], function () {
         Route::get('/posts', function () {
@@ -279,4 +279,6 @@ Route::group(['middleware' => ['auth:api']], function () {
             ]);
         });
     });
-}); 
+});
+
+Route::apiResource('tenants', \App\Http\Controllers\Api\TenantController::class);
