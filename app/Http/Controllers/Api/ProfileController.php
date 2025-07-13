@@ -13,6 +13,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Resources\ProfileResource;
 
+/**
+ * @OA\Tag(
+ *     name="Profile",
+ *     description="API Endpoints for managing user profile"
+ * )
+ * @OA\SecurityScheme(
+ *     securityScheme="bearerAuth",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT"
+ * )
+ */
 class ProfileController extends Controller
 {
     /**

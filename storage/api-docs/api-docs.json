@@ -1084,6 +1084,11 @@
                 "description": "Enter token in format (Bearer <token>)",
                 "name": "Authorization",
                 "in": "header"
+            },
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
             }
         }
     },
@@ -1093,12 +1098,12 @@
             "description": "API Endpoints for managing permissions"
         },
         {
-            "name": "Auth",
-            "description": "Auth"
+            "name": "Profile",
+            "description": "API Endpoints for managing user profile"
         },
         {
-            "name": "Profile",
-            "description": "Profile"
+            "name": "Auth",
+            "description": "Auth"
         }
     ]
 }
