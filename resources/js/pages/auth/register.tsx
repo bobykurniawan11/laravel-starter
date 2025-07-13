@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Github } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
@@ -34,6 +34,22 @@ export default function Register() {
     return (
         <AuthLayout title="Create an account" description="Enter your details below to create your account">
             <Head title="Register" />
+            <div className="mb-6 grid gap-4">
+                <Button variant="outline" className="w-full" asChild>
+                    <a href="/auth/github/redirect" className="flex items-center justify-center">
+                        <Github className="mr-2 h-4 w-4" /> Continue with GitHub
+                    </a>
+                </Button>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase text-muted-foreground">
+                        <span className="bg-background px-2">Or sign up with</span>
+                    </div>
+                </div>
+            </div>
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
