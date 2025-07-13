@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Requests\ProfileUpdateRequest;
+use App\Http\Requests\PasswordUpdateRequest;
+use App\Http\Requests\DeactivateAccountRequest;
+use App\Http\Requests\AvatarUploadRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rules\Password;
+use App\Http\Resources\ProfileResource;
 
 class ProfileController extends Controller
 {
@@ -20,75 +23,116 @@ class ProfileController extends Controller
         if (!$avatarPath) {
             return null;
         }
-        
-        return env('MINIO_ENDPOINT') .env('MINIO_BUCKET') . '/' . $avatarPath;
+
+        return env('MINIO_ENDPOINT') . env('MINIO_BUCKET') . '/' . $avatarPath;
     }
 
     /**
-     * Get current user profile
+     * @OA\Get(
+     *     path="/api/profile",
+     *     tags={"Profile"},
+     *     summary="Get current user profile",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Profile retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Profile retrieved successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/ProfileResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
-        
         return response()->json([
             'success' => true,
             'message' => 'Profile retrieved successfully',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $this->getAvatarUrl($user->avatar),
-                'tenant_id' => $user->tenant_id,
-                'roles' => $user->getRoles()->pluck('name'),
-                'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
-            ]
+            'data' => new ProfileResource($user),
         ]);
     }
 
     /**
-     * Update user profile (biodata)
+     * @OA\Put(
+     *     path="/api/profile",
+     *     tags={"Profile"},
+     *     summary="Update user profile (biodata)",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ProfileUpdateRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Profile updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Profile updated successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/ProfileResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(ProfileUpdateRequest $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
         $user = $request->user();
-        $user->update([
-            'name' => $request->name,
-        ]);
-
+        $user->update($request->validated());
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $this->getAvatarUrl($user->avatar),
-                'updated_at' => $user->updated_at,
-            ]
+            'data' => new ProfileResource($user),
         ]);
     }
 
     /**
-     * Update user password
+     * @OA\Put(
+     *     path="/api/profile/password",
+     *     tags={"Profile"},
+     *     summary="Update user password",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/PasswordUpdateRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Password updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Password updated successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
-    public function updatePassword(Request $request): JsonResponse
+    public function updatePassword(PasswordUpdateRequest $request): JsonResponse
     {
-        $request->validate([
-            'current_password' => 'required|current_password',
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
-
         $user = $request->user();
         $user->update([
-            'password' => Hash::make($request->password),
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
         ]);
-
         return response()->json([
             'success' => true,
             'message' => 'Password updated successfully'
@@ -96,20 +140,37 @@ class ProfileController extends Controller
     }
 
     /**
-     * Deactivate user account (soft delete)
+     * @OA\Post(
+     *     path="/api/profile/deactivate",
+     *     tags={"Profile"},
+     *     summary="Deactivate user account (soft delete)",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/DeactivateAccountRequest")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Account deactivated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Account deactivated successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
-    public function deactivate(Request $request): JsonResponse
+    public function deactivate(DeactivateAccountRequest $request): JsonResponse
     {
-        $request->validate([
-            'password' => 'required|current_password',
-        ]);
-
         $user = $request->user();
-        $user->delete(); // Soft delete
-
-        // Revoke all tokens for this user
-        Auth::guard('api')->logout();
-
+        $user->delete();
+        \Illuminate\Support\Facades\Auth::guard('api')->logout();
         return response()->json([
             'success' => true,
             'message' => 'Account deactivated successfully'
@@ -117,56 +178,95 @@ class ProfileController extends Controller
     }
 
     /**
-     * Upload user avatar
+     * @OA\Post(
+     *     path="/api/profile/avatar",
+     *     tags={"Profile"},
+     *     summary="Upload user avatar",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(ref="#/components/schemas/AvatarUploadRequest")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Avatar uploaded successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Avatar uploaded successfully"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="avatar_url", type="string", example="https://minio.example.com/bucket/avatars/avatar.jpg"),
+     *                 @OA\Property(property="avatar_path", type="string", example="avatars/avatar.jpg")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
-    public function uploadAvatar(Request $request): JsonResponse
+    public function uploadAvatar(AvatarUploadRequest $request): JsonResponse
     {
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB max
-        ]);
-
         $user = $request->user();
-
-        // Delete old avatar if exists
-        if ($user->avatar && Storage::disk('minio')->exists($user->avatar)) {
-            Storage::disk('minio')->delete($user->avatar);
+        if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('minio')->exists($user->avatar)) {
+            \Illuminate\Support\Facades\Storage::disk('minio')->delete($user->avatar);
         }
-
-        // Store new avatar
         $avatarPath = $request->file('avatar')->store('avatars', 'minio');
-
         $user->update([
             'avatar' => $avatarPath,
         ]);
-
+        $avatarUrl = env('MINIO_ENDPOINT') . env('MINIO_BUCKET') . '/' . $avatarPath;
         return response()->json([
             'success' => true,
             'message' => 'Avatar uploaded successfully',
             'data' => [
-                'avatar_url' => $this->getAvatarUrl($avatarPath),
+                'avatar_url' => $avatarUrl,
                 'avatar_path' => $avatarPath,
             ]
         ]);
     }
 
     /**
-     * Delete user avatar
+     * @OA\Delete(
+     *     path="/api/profile/avatar",
+     *     tags={"Profile"},
+     *     summary="Delete user avatar",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Avatar deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Avatar deleted successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
     public function deleteAvatar(Request $request): JsonResponse
     {
         $user = $request->user();
-
-        if ($user->avatar && Storage::disk('minio')->exists($user->avatar)) {
-            Storage::disk('minio')->delete($user->avatar);
+        if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('minio')->exists($user->avatar)) {
+            \Illuminate\Support\Facades\Storage::disk('minio')->delete($user->avatar);
         }
-
         $user->update([
             'avatar' => null,
         ]);
-
         return response()->json([
             'success' => true,
             'message' => 'Avatar deleted successfully'
         ]);
     }
-} 
+}
