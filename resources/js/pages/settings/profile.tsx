@@ -1,7 +1,8 @@
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
+import { toast } from 'sonner';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
-import { FormEventHandler, useRef, useState } from 'react';
+import { FormEventHandler, useRef, useState, useEffect } from 'react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -25,16 +26,28 @@ type ProfileForm = {
     email: string;
 };
 
-export default function Profile({ 
-    mustVerifyEmail, 
-    status, 
-    avatarUrl 
-}: { 
-    mustVerifyEmail: boolean; 
-    status?: string; 
-    avatarUrl?: string | null; 
+export default function Profile({
+    mustVerifyEmail,
+    status,
+    avatarUrl
+}: {
+    mustVerifyEmail: boolean;
+    status?: string;
+    avatarUrl?: string | null;
 }) {
     const { auth } = usePage<SharedData>().props;
+    const { errors: pageErrors, status: flashStatus } = usePage().props as any;
+
+    // toast for flash messages
+    useEffect(() => {
+        if (flashStatus && typeof flashStatus === 'string') {
+            toast.success(flashStatus);
+        }
+        if (pageErrors?.social) {
+            toast.error(pageErrors.social as string);
+        }
+    }, [flashStatus, pageErrors]);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -56,7 +69,7 @@ export default function Profile({
         if (!file) return;
 
         setUploadingAvatar(true);
-        
+
         const formData = new FormData();
         formData.append('avatar', file);
 
@@ -98,7 +111,7 @@ export default function Profile({
                     {/* Avatar Section */}
                     <div className="space-y-4">
                         <HeadingSmall title="Profile Photo" description="Update your profile picture" />
-                        
+
                         <div className="flex items-center gap-6">
                             <Avatar className="h-20 w-20">
                                 {avatarUrl ? (
@@ -109,28 +122,28 @@ export default function Profile({
                                     </AvatarFallback>
                                 )}
                             </Avatar>
-                            
+
                             <div className="flex gap-3">
-                                <Button 
-                                    type="button" 
-                                    variant="outline" 
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={uploadingAvatar}
                                 >
                                     {uploadingAvatar ? 'Uploading...' : 'Upload Photo'}
                                 </Button>
-                                
+
                                 {avatarUrl && (
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
+                                    <Button
+                                        type="button"
+                                        variant="outline"
                                         onClick={handleDeleteAvatar}
                                     >
                                         Delete Photo
                                     </Button>
                                 )}
                             </div>
-                            
+
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -139,7 +152,7 @@ export default function Profile({
                                 className="hidden"
                             />
                         </div>
-                        
+
                         <p className="text-sm text-muted-foreground">
                             JPG, PNG, GIF up to 2MB
                         </p>
@@ -217,6 +230,36 @@ export default function Profile({
                             </Transition>
                         </div>
                     </form>
+
+                    {/* Social Accounts Section */}
+                    <HeadingSmall title="Social accounts" description="Connect or disconnect third-party accounts" />
+
+                    <div className="space-y-2">
+                        {auth.user.provider_name === 'github' ? (
+                            <div className="flex items-center gap-4">
+                                <p className="text-sm">GitHub account connected</p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        if (confirm('Disconnect GitHub account?')) {
+                                            router.delete(route('github.unlink'), {
+                                                preserveScroll: true,
+                                                onSuccess: () => toast.success('GitHub account disconnected'),
+                                            });
+                                        }
+                                    }}
+                                >
+                                    Disconnect
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button variant="outline" asChild>
+                                <a href={route('github.redirect')}>Connect GitHub</a>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <DeleteUser />

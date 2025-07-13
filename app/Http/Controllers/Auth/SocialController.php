@@ -28,17 +28,29 @@ class SocialController extends Controller
      */
     public function callback(string $provider = 'github')
     {
+        $isLinking = Auth::check();
         try {
             $social = Socialite::driver($provider)->stateless()->user();
         } catch (Throwable $e) {
-            Log::error('Socialite error', [
-                'provider' => $provider,
-                'message' => $e->getMessage(),
-            ]);
+            Log::error('Socialite error', ['provider' => $provider, 'message' => $e->getMessage()]);
+            return redirect()->route($isLinking ? 'profile.edit' : 'login')->withErrors(['social' => 'Authentication failed, please try again.']);
+        }
 
-            return redirect()->route('login')->withErrors([
-                'social' => 'Authentication failed, please try again.',
-            ]);
+        if ($isLinking) {
+            $current = Auth::user();
+            // if another user already has this provider_id, abort
+            $existing = User::where('provider_name', $provider)->where('provider_id', $social->getId())->first();
+            if ($existing && $existing->id !== $current->id) {
+                return redirect()->route('profile.edit')->withErrors(['social' => 'This ' . $provider . ' account is linked to another user.']);
+            }
+
+            $current->forceFill([
+                'provider_name' => $provider,
+                'provider_id' => $social->getId(),
+                'avatar' => $social->getAvatar() ?: $current->avatar,
+            ])->save();
+
+            return redirect()->route('profile.edit')->with('status', '' . $provider . ' account linked successfully.');
         }
 
         // 1) Already linked
@@ -77,5 +89,17 @@ class SocialController extends Controller
         Auth::login($user, remember: true);
 
         return redirect()->intended('/');
+    }
+
+    // Add unlink method
+    public function unlink(string $provider = 'github')
+    {
+        $user = Auth::user();
+        $user->forceFill([
+            'provider_name' => null,
+            'provider_id' => null,
+        ])->save();
+
+        return back()->with('status', ucfirst($provider) . ' account disconnected.');
     }
 }

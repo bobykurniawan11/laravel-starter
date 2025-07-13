@@ -32,13 +32,11 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
-
-    // GitHub OAuth
-    Route::get('auth/github/redirect', [App\Http\Controllers\Auth\SocialController::class, 'redirect'])
-        ->name('github.redirect');
-    Route::get('auth/github/callback', [App\Http\Controllers\Auth\SocialController::class, 'callback'])
-        ->name('github.callback');
 });
+
+// GitHub OAuth routes (accessible regardless of auth state)
+Route::get('auth/github/redirect', [App\Http\Controllers\Auth\SocialController::class, 'redirect'])->name('github.redirect');
+Route::get('auth/github/callback', [App\Http\Controllers\Auth\SocialController::class, 'callback'])->name('github.callback');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
@@ -59,4 +57,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    Route::delete('auth/github/unlink', [App\Http\Controllers\Auth\SocialController::class, 'unlink'])
+        ->name('github.unlink');
 });
