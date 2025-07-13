@@ -6,6 +6,13 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @OA\Schema(
+ *     schema="TenantStoreRequest",
+ *     required={"name"},
+ *     @OA\Property(property="name", type="string", maxLength=255, example="New Tenant Inc.")
+ * )
+ */
 class TenantStoreRequest extends FormRequest
 {
     public function authorize(): bool

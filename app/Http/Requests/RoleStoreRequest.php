@@ -6,6 +6,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @OA\Schema(
+ *     schema="RoleStoreRequest",
+ *     required={"name"},
+ *     @OA\Property(property="name", type="string", maxLength=255, example="admin"),
+ *     @OA\Property(property="title", type="string", maxLength=255, example="Administrator")
+ * )
+ */
 class RoleStoreRequest extends FormRequest
 {
     /**
@@ -45,4 +53,4 @@ class RoleStoreRequest extends FormRequest
             'title.max' => 'Role title may not be greater than 255 characters.',
         ];
     }
-} 
+}

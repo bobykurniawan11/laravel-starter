@@ -7,6 +7,14 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * @OA\Schema(
+ *     schema="RoleUpdateRequest",
+ *     required={"name"},
+ *     @OA\Property(property="name", type="string", maxLength=255, example="manager"),
+ *     @OA\Property(property="title", type="string", maxLength=255, example="Manager")
+ * )
+ */
 class RoleUpdateRequest extends FormRequest
 {
     /**
@@ -25,7 +33,7 @@ class RoleUpdateRequest extends FormRequest
     public function rules(): array
     {
         $roleId = $this->route('id');
-        
+
         return [
             'name' => [
                 'required',
@@ -53,4 +61,4 @@ class RoleUpdateRequest extends FormRequest
             'title.max' => 'Role title may not be greater than 255 characters.',
         ];
     }
-} 
+}

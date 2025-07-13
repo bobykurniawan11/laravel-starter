@@ -7,6 +7,17 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * @OA\Schema(
+ *     schema="UserUpdateRequest",
+ *     required={"name", "email", "role"},
+ *     @OA\Property(property="name", type="string", example="John Doe"),
+ *     @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
+ *     @OA\Property(property="password", type="string", format="password", example="new_password", description="Optional. If provided, must be confirmed."),
+ *     @OA\Property(property="role", type="string", example="staff", enum={"developer", "admin", "staff"}),
+ *     @OA\Property(property="tenant_id", type="integer", example=1, description="Required if user is not a developer")
+ * )
+ */
 class UserUpdateRequest extends FormRequest
 {
     /**
@@ -25,7 +36,7 @@ class UserUpdateRequest extends FormRequest
     public function rules(): array
     {
         $userId = $this->route('id');
-        
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -57,4 +68,4 @@ class UserUpdateRequest extends FormRequest
             'tenant_id.exists' => 'Selected tenant does not exist.',
         ];
     }
-} 
+}
