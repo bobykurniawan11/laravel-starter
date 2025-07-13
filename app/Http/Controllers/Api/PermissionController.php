@@ -18,12 +18,6 @@ use App\Http\Resources\PermissionResource;
  *     name="Permissions",
  *     description="API Endpoints for managing permissions"
  * )
- * @OA\SecurityScheme(
- *     securityScheme="bearerAuth",
- *     type="http",
- *     scheme="bearer",
- *     bearerFormat="JWT"
- * )
  */
 class PermissionController extends Controller
 {

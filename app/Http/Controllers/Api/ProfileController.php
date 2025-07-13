@@ -18,12 +18,6 @@ use App\Http\Resources\ProfileResource;
  *     name="Profile",
  *     description="API Endpoints for managing user profile"
  * )
- * @OA\SecurityScheme(
- *     securityScheme="bearerAuth",
- *     type="http",
- *     scheme="bearer",
- *     bearerFormat="JWT"
- * )
  */
 class ProfileController extends Controller
 {

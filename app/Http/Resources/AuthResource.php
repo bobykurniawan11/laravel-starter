@@ -23,6 +23,8 @@ use OpenApi\Annotations as OA;
  */
 class AuthResource extends JsonResource
 {
+    public static $wrap = null;
+
     /**
      * Transform the resource into an array.
      *

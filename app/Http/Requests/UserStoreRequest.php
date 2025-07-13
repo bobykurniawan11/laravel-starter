@@ -7,6 +7,17 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * @OA\Schema(
+ *     schema="UserStoreRequest",
+ *     required={"name", "email", "password", "role"},
+ *     @OA\Property(property="name", type="string", example="John Doe"),
+ *     @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
+ *     @OA\Property(property="password", type="string", format="password", example="password123"),
+ *     @OA\Property(property="role", type="string", example="staff", enum={"developer", "admin", "staff"}),
+ *     @OA\Property(property="tenant_id", type="integer", example=1, description="Required if user is not a developer")
+ * )
+ */
 class UserStoreRequest extends FormRequest
 {
     /**
@@ -51,4 +62,4 @@ class UserStoreRequest extends FormRequest
             'tenant_id.exists' => 'Selected tenant does not exist.',
         ];
     }
-} 
+}
