@@ -3,214 +3,136 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Resources\AuthResource;
 use App\Models\User;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use App\Models\Tenant;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
+use OpenApi\Annotations as OA;
+use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * @OA\Info(
+ *     title="Laravel Starter API",
+ *     version="1.0.0",
+ *     description="API documentation for the Laravel Starter project."
+ * )
+ * @OA\SecurityScheme(
+ *     securityScheme="sanctum",
+ *     type="apiKey",
+ *     name="Authorization",
+ *     in="header",
+ *     description="Enter the token in the format: Bearer {token}"
+ * )
+ */
 class AuthController extends Controller
 {
     /**
-     * Register a new user
-     *
-     * @param Request $request
-     * @return JsonResponse
+     * @OA\Post(
+     *     path="/api/register",
+     *     summary="Register a new user",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name", "email", "password", "password_confirmation"},
+     *             @OA\Property(property="name", type="string", example="John Doe"),
+     *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="password"),
+     *             @OA\Property(property="password_confirmation", type="string", format="password", example="password")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="User registered successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/AuthResource")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     )
+     * )
      */
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // 1. Create a new tenant for the user
-        $tenant = Tenant::create([
-            'name' => $request->name . "'s Company",
-        ]);
-
-        // 2. Create the user and assign them to the new tenant
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'tenant_id' => $tenant->id,
         ]);
 
-        // 3. Assign the 'admin' role to the user for their new tenant
-        $user->assign('admin');
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        // 4. Generate JWT Token
-        $token = JWTAuth::fromUser($user);
-
-        // 5. Return a response consistent with the login method
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered and tenant created successfully',
-            'user' => $user->load('tenant', 'roles'),
-            'roles' => $user->getRoles(),
-            'abilities' => $user->getAbilities(),
-            'tenant' => $user->tenant,
+        return (new AuthResource([
+            'user' => $user,
             'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60
-        ], 201);
+        ]))->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
-     * Login user and create token
-     *
-     * @param Request $request
-     * @return JsonResponse
+     * @OA\Post(
+     *     path="/api/login",
+     *     summary="Log in a user",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email", "password"},
+     *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="password")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="User logged in successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/AuthResource")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Invalid credentials"
+     *     )
+     * )
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation errors',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $credentials = $request->only('email', 'password');
-
-        try {
-            if (!$token = JWTAuth::attempt($credentials)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid credentials'
-                ], 401);
-            }
-        } catch (JWTException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Could not create token'
-            ], 500);
-        }
-
         $user = User::where('email', $request->email)->first();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
-            'user' => $user->load('tenant', 'roles'),
-            'roles' => $user->getRoles(),
-            'abilities' => $user->getAbilities(),
-            'tenant' => $user->tenant,
-            'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60
-        ]);
-    }
 
-    /**
-     * Get the authenticated User
-     *
-     * @return JsonResponse
-     */
-    public function me(): JsonResponse
-    {
-        $user = auth('api')->user();
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found'
-            ], 404);
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
         }
-        
-        return response()->json([
-            'success' => true,
-            'user' => $user->load('tenant', 'roles'),
-            'roles' => $user->getRoles(),
-            'abilities' => $user->getAbilities(),
-            'tenant' => $user->tenant,
-            'can_access_all_tenants' => $user->can('read-all-tenants'),
-        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return (new AuthResource([
+            'user' => $user,
+            'token' => $token,
+        ]))->response();
     }
 
     /**
-     * Log the user out (Invalidate the token)
-     *
-     * @return JsonResponse
+     * @OA\Post(
+     *     path="/api/logout",
+     *     summary="Log out the current user",
+     *     tags={"Auth"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Logged out successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Logged out successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
+     *     )
+     * )
      */
     public function logout(): JsonResponse
     {
-        auth('api')->logout();
+        auth()->user()->tokens()->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully logged out'
-        ]);
-    }
-
-    /**
-     * Refresh a token
-     *
-     * @return JsonResponse
-     */
-    public function refresh(): JsonResponse
-    {
-        try {
-            $token = auth('api')->refresh();
-            $user = auth('api')->user();
-
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found'
-                ], 404);
-            }
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Token refreshed successfully',
-                'user' => $user->load('tenant', 'roles'),
-                'token' => $token,
-                'token_type' => 'bearer',
-                'expires_in' => auth('api')->factory()->getTTL() * 60
-            ]);
-        } catch (JWTException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Could not refresh token'
-            ], 500);
-        }
-    }
-
-    /**
-     * Get user permissions
-     *
-     * @return JsonResponse
-     */
-    public function permissions(): JsonResponse
-    {
-        $user = auth('api')->user();
-        
-        return response()->json([
-            'success' => true,
-            'roles' => $user->getRoles(),
-            'abilities' => $user->getAbilities(),
-            'all_abilities' => $user->getAbilities()->pluck('name')
-        ]);
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }

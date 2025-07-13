@@ -7,6 +7,14 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * @OA\Schema(
+ *     schema="PermissionUpdateRequest",
+ *     required={"name"},
+ *     @OA\Property(property="name", type="string", maxLength=255, example="manage-users"),
+ *     @OA\Property(property="title", type="string", maxLength=255, example="Manage Users")
+ * )
+ */
 class PermissionUpdateRequest extends FormRequest
 {
     /**
@@ -25,7 +33,7 @@ class PermissionUpdateRequest extends FormRequest
     public function rules(): array
     {
         $permissionId = $this->route('id');
-        
+
         return [
             'name' => [
                 'required',
@@ -53,4 +61,4 @@ class PermissionUpdateRequest extends FormRequest
             'title.max' => 'Permission title may not be greater than 255 characters.',
         ];
     }
-} 
+}

@@ -6,6 +6,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @OA\Schema(
+ *     schema="PermissionStoreRequest",
+ *     required={"name"},
+ *     @OA\Property(property="name", type="string", maxLength=255, example="manage-users"),
+ *     @OA\Property(property="title", type="string", maxLength=255, example="Manage Users")
+ * )
+ */
 class PermissionStoreRequest extends FormRequest
 {
     /**
@@ -45,4 +53,4 @@ class PermissionStoreRequest extends FormRequest
             'title.max' => 'Permission title may not be greater than 255 characters.',
         ];
     }
-} 
+}
