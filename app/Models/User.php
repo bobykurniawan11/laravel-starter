@@ -27,6 +27,8 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'tenant_id',
         'avatar',
+        'provider_name',
+        'provider_id',
     ];
 
     /**
@@ -69,7 +71,7 @@ class User extends Authenticatable implements JWTSubject
         if ($this->isA('developer')) {
             return true;
         }
-        
+
         // Admin and Staff can only access their own tenant
         return $this->tenant_id === $tenantId;
     }
