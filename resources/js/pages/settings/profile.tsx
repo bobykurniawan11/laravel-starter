@@ -259,6 +259,30 @@ export default function Profile({
                                 <a href={route('github.redirect')}>Connect GitHub</a>
                             </Button>
                         )}
+                        {auth.user.provider_name === 'google' ? (
+                            <div className="flex items-center gap-4">   
+                                <p className="text-sm">Google account connected</p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        if (confirm('Disconnect Google account?')) {
+                                            router.delete(route('google.unlink'), {
+                                                preserveScroll: true,
+                                                onSuccess: () => toast.success('Google account disconnected'),
+                                            });
+                                        }
+                                    }}
+                                >
+                                    Disconnect
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button variant="outline" asChild>
+                                <a href={route('google.redirect')}>Connect Google</a>
+                            </Button>
+                        )}
                     </div>
                 </div>
 

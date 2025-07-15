@@ -35,8 +35,18 @@ Route::middleware('guest')->group(function () {
 });
 
 // GitHub OAuth routes (accessible regardless of auth state)
-Route::get('auth/github/redirect', [App\Http\Controllers\Auth\SocialController::class, 'redirect'])->name('github.redirect');
-Route::get('auth/github/callback', [App\Http\Controllers\Auth\SocialController::class, 'callback'])->name('github.callback');
+// For GitHub
+Route::get('auth/github/redirect', [SocialController::class, 'redirect'])
+    ->name('github.redirect');
+Route::get('auth/github/callback', [SocialController::class, 'callback'])
+    ->name('github.callback');
+
+// For Google
+Route::get('auth/google/redirect', [SocialController::class, 'redirect'])
+    ->name('google.redirect');
+Route::get('auth/google/callback', [SocialController::class, 'callback'])
+    ->name('google.callback');
+    
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
