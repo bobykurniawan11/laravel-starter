@@ -47,10 +47,12 @@ class HandleInertiaRequests extends Middleware
         ];
 
         if ($user) {
+            $user->load('socialAccounts');
             $authData['roles'] = $user->getRoles()->pluck('name')->toArray();
             $authData['permissions'] = $user->getAbilities()->pluck('name')->toArray();
             $authData['tenant'] = $user->tenant;
             $authData['tenant_id'] = $user->tenant_id;
+            $authData['social_accounts'] = $user->socialAccounts;
             
             // Helper methods for frontend
             $authData['can'] = [

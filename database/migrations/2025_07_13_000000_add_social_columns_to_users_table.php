@@ -8,16 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('provider_name')->nullable()->after('avatar');
-            $table->string('provider_id')->nullable()->after('provider_name')->unique();
+        Schema::create('social_accounts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('provider_name');
+            $table->string('provider_id');
+            $table->string('avatar')->nullable();
+            $table->timestamps();
+
+            $table->unique(['provider_name', 'provider_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['provider_name', 'provider_id']);
-        });
+        Schema::dropIfExists('social_accounts');
     }
 };

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,19 +35,11 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
-// GitHub OAuth routes (accessible regardless of auth state)
-// For GitHub
-Route::get('auth/github/redirect', [SocialController::class, 'redirect'])
-    ->name('github.redirect');
-Route::get('auth/github/callback', [SocialController::class, 'callback'])
-    ->name('github.callback');
+Route::controller(SocialController::class)->group(function () {
+    Route::get('auth/{provider}/redirect', 'redirect')->name('social.redirect');
+    Route::get('auth/{provider}/callback', 'callback')->name('social.callback');
+});
 
-// For Google
-Route::get('auth/google/redirect', [SocialController::class, 'redirect'])
-    ->name('google.redirect');
-Route::get('auth/google/callback', [SocialController::class, 'callback'])
-    ->name('google.callback');
-    
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
@@ -67,7 +60,6 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
-
-    Route::delete('auth/github/unlink', [App\Http\Controllers\Auth\SocialController::class, 'unlink'])
-        ->name('github.unlink');
+        
+    Route::delete('auth/{provider}/unlink', [SocialController::class, 'unlink'])->name('social.unlink');
 });
