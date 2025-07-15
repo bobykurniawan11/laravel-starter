@@ -5,11 +5,13 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Silber\Bouncer\Database\HasRolesAndAbilities;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use App\Models\SocialAccount;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -27,8 +29,6 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'tenant_id',
         'avatar',
-        'provider_name',
-        'provider_id',
     ];
 
     /**
@@ -60,6 +60,14 @@ class User extends Authenticatable implements JWTSubject
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Get all social accounts linked to the user.
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
     }
 
     /**

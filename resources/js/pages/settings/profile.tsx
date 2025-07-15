@@ -26,17 +26,16 @@ type ProfileForm = {
     email: string;
 };
 
-export default function Profile({
-    mustVerifyEmail,
-    status,
-    avatarUrl
-}: {
+type PageProps = {
     mustVerifyEmail: boolean;
     status?: string;
     avatarUrl?: string | null;
-}) {
+    errors: Record<string, string>;
+};
+
+export default function Profile({ mustVerifyEmail, status, avatarUrl }: PageProps) {
     const { auth } = usePage<SharedData>().props;
-    const { errors: pageErrors, status: flashStatus } = usePage().props as any;
+    const { errors: pageErrors, status: flashStatus } = usePage<PageProps>().props;
 
     // toast for flash messages
     useEffect(() => {
@@ -234,31 +233,56 @@ export default function Profile({
                     {/* Social Accounts Section */}
                     <HeadingSmall title="Social accounts" description="Connect or disconnect third-party accounts" />
 
-                    <div className="space-y-2">
-                        {auth.user.provider_name === 'github' ? (
-                            <div className="flex items-center gap-4">
-                                <p className="text-sm">GitHub account connected</p>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        if (confirm('Disconnect GitHub account?')) {
-                                            router.delete(route('github.unlink'), {
-                                                preserveScroll: true,
-                                                onSuccess: () => toast.success('GitHub account disconnected'),
-                                            });
-                                        }
-                                    }}
-                                >
-                                    Disconnect
-                                </Button>
-                            </div>
-                        ) : (
-                            <Button variant="outline" asChild>
-                                <a href={route('github.redirect')}>Connect GitHub</a>
-                            </Button>
-                        )}
+                    <div className="space-y-4">
+                        {(['github', 'google'] as const).map((provider) => {
+                            const socialAccount = auth.social_accounts?.find(
+                                (sa) => sa.provider_name === provider,
+                            );
+
+                            return (
+                                <div key={provider}>
+                                    {socialAccount ? (
+                                        <div className="flex items-center gap-4">
+                                            <p className="w-40 text-sm capitalize">
+                                                {provider} account connected
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    if (confirm(`Disconnect ${provider} account?`)) {
+                                                        router.delete(
+                                                            route('social.unlink', { provider }),
+                                                            {
+                                                                preserveScroll: true,
+                                                                onSuccess: () =>
+                                                                    toast.success(
+                                                                        `${provider} account disconnected`,
+                                                                    ),
+                                                            },
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                Disconnect
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-4">
+                                            <p className="w-40 text-sm capitalize">
+                                                Connect with {provider}
+                                            </p>
+                                            <Button variant="outline" asChild>
+                                                <a href={route('social.redirect', { provider })}>
+                                                    Connect {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
