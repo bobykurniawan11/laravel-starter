@@ -32,6 +32,9 @@ class TenantController extends Controller
             $tenantId = null;
         } else {
             $tenantId = $request->user()->tenant_id;
+            if ($tenantId == null) {
+                abort(403, 'Unauthorized');
+            }
         }
 
 

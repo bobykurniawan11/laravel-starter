@@ -31,8 +31,8 @@ interface Props extends PageProps {
 export default function TenantsPage({ tenants, search: initialSearch }: Props) {
     const { hasPermission } = useAuth();
     const canCreate = hasPermission('create-tenants');
-    const canUpdate = hasPermission('update-all-tenants');
-    const canDelete = hasPermission('delete-all-tenants');
+    const canUpdate = hasPermission('update-all-tenants') || hasPermission('update-tenant-data');
+    const canDelete = hasPermission('delete-all-tenants') || hasPermission('delete-tenant-data');
     const [search, setSearch] = useState(initialSearch ?? '');
     const filtered = useMemo(() => {
         if (!search.trim()) return tenants.data;
