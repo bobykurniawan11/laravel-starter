@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\AuthResource;
+use App\Http\Resources\UserResource;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -56,16 +58,28 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
+
+        $tenant = Tenant::create([
+            'name' => $request->name . "'s Company",
+        ]);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'tenant_id' => $tenant->id,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+
+
+        $token = auth('api')->attempt(credentials: $request->only('email', 'password'));
+
+        $user->assign(roles: 'admin');
+
 
         return (new AuthResource([
-            'user' => $user,
+            //user resource
+            'user' =>  new UserResource($user->load('roles', 'tenant')),
             'token' => $token,
         ]))->response()->setStatusCode(Response::HTTP_CREATED);
     }
@@ -102,11 +116,11 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return (new AuthResource([
-            'user' => $user,
+        $token = auth('api')->attempt(credentials: $request->only('email', 'password'));
+        return (new AuthResource(resource: [
+            'user' => new UserResource($user->load('roles', 'tenant')),
             'token' => $token,
+            "status" => "success",
         ]))->response();
     }
 
