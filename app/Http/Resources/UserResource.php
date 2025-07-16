@@ -59,6 +59,7 @@ class UserResource extends JsonResource
                     ];
                 });
             }),
+            'permissions' => $this->getAbilities()->pluck('name')->toArray(),
             'primary_role' => $this->whenLoaded('roles', function () {
                 return $this->roles->first()?->name;
             }),

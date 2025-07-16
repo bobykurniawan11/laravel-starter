@@ -11,7 +11,7 @@ use App\Http\Requests\DeactivateAccountRequest;
 use App\Http\Requests\AvatarUploadRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Http\Resources\ProfileResource;
+use App\Http\Resources\UserResource;
 
 /**
  * @OA\Tag(
@@ -45,7 +45,7 @@ class ProfileController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Profile retrieved successfully"),
-     *             @OA\Property(property="data", ref="#/components/schemas/ProfileResource")
+     *             @OA\Property(property="data", ref="#/components/schemas/UserResource")
      *         )
      *     ),
      *     @OA\Response(
@@ -63,7 +63,7 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile retrieved successfully',
-            'data' => new ProfileResource($user),
+            'data' => new UserResource($user->load('roles', 'tenant')),
         ]);
     }
 
@@ -83,7 +83,7 @@ class ProfileController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Profile updated successfully"),
-     *             @OA\Property(property="data", ref="#/components/schemas/ProfileResource")
+     *             @OA\Property(property="data", ref="#/components/schemas/UserResource")
      *         )
      *     ),
      *     @OA\Response(
@@ -102,7 +102,7 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'data' => new ProfileResource($user),
+            'data' => new UserResource($user),
         ]);
     }
 
