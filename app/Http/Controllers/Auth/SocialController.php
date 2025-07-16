@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\SocialAccount;
+use App\Models\Tenant;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -79,6 +80,15 @@ class SocialController extends Controller
                     'email_verified_at' => now(), // Assume email is verified by the provider
                 ]
             );
+            if ($userToLink->wasRecentlyCreated) {
+                $tenant = Tenant::create([
+                    'name' => $userToLink->name . "'s Company",
+                ]);
+        
+                $userToLink->assign('admin');
+                $userToLink->tenant_id = $tenant->id;
+                $userToLink->save();
+            }
         }
 
         // Now, create the social account and link it to the user.
